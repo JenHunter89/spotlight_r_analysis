@@ -2,6 +2,7 @@
 **** Load working_all.dta in stata
 **** When this runs without issues, need to convert resulting file to csv, load to R (remember latin encode = 1)
 **** Then need to merge my strobe file with resulting csv
+**** Note have deleted include cr_severity.do from line 649, then continued after - check will this work
 
 
 cap label drop truefalse
@@ -411,14 +412,6 @@ label var icu_recommend "Recommended for critical care"
 *  ============================================
 *  = Prep vars in standardised way for models =
 *  ============================================
-/*
-As a general rule of thumb
-    - var with suffix _c = centred
-    - var with suffix _k = categorical version
-    - var with suffix _b = binary version
-    - var with suffix _q = quintiles (where q is followed by number)
-*/
-* Patient vars
 
 label values white truefalse
 
@@ -441,7 +434,6 @@ label define delayed_referral 0 "Timely" 1 "Delayed"
 label values delayed_referral delayed_referral
 drop v_timely
 
-* Site vars
 cap drop referrals_permonth
 cap drop pickone_site
 egen pickone_site = tag(icode)
@@ -474,8 +466,6 @@ gen hes_emergx_c = hes_emergx - r(mean)
 su cmp_beds_persite, meanonly
 gen cmp_beds_persite_c = cmp_beds_persite - r(mean)
 
-
-* Round all centred variables
 foreach var of varlist * {
     if substr("`var'",-2,2) != "_c" {
         continue
@@ -492,28 +482,6 @@ rename icnarc_score ims1
 rename imscore ims2
 label var ims1 "ICNARC score (SPOT)"
 label var ims2 "ICNARC score (CMPD)"
-
-/*
-NOTE: 2012-11-12 - this assumes that
-all ICNARC scores within the 1st 24 hours are equivalent
-*/
-
-
-/*
-Diagnostic coding
- 2.1.4.27.5 |        838       18.53       18.53
- 2.1.4.27.1 |        278        6.15       24.68
-2.2.12.35.2 |        183        4.05       28.73
- 2.3.9.28.1 |        145        3.21       31.93
- 2.7.1.13.2 |        139        3.07       35.01
- 2.7.1.13.1 |        130        2.87       37.88
- 2.7.1.13.4 |        127        2.81       40.69
- Pneumonia - no org
- Pneumonia - bacterial
- Septic shock
- Acute pancreatitis
- Acute renal failure
-*/
 
 cap drop dx_*
 gen dx_pneum = regexm(raicu1, "[12]\.1\.4\.27\.+")
@@ -548,15 +516,12 @@ replace dx_cat = 5 if dx_acpanc
 replace dx_cat = 6 if dx_arf
 label var dx_cat "Diagnosis - categorical"
 cap label drop dx_cat
-label define dx_cat 0 "Other" 1 "Pneum - viral" 2 "Pneum - bact" ///
-    3 "Pneum - unknown" 4 "Septic shock" 5 "Acute pancreatitis" ///
-    6 "Acute renal failure"
+label define dx_cat 0 "Other" 1 "Pneum - viral" 2 "Pneum - bact" 3 "Pneum - unknown" 4 "Septic shock" 5 "Acute pancreatitis" 6 "Acute renal failure"
 label values dx_cat dx_cat
 tab dx_cat
 
 d dx_*
 
-// Prepare variables so appropriately labelled for severity scores
 cap drop hr1
 ren hrate hr1
 label var hr1 "Heart rate - ward"
@@ -627,7 +592,6 @@ su cr1 cr2
 gen na2 = lna
 replace na2 = hna if na2 == .
 label var na2 "Sodium - ICU"
-/* Some v low sodiums in CMPD ... not possible */
 replace na2 = .a if na2 < 80
 ren sodium na1
 label var na1 "Sodium - ward"
@@ -670,7 +634,6 @@ label var gcs2 "GCS - ICU"
 replace gcs2 = .a if gcs2 < 3
 su gcs1 gcs2
 
-/* Lactate */
 cap drop lac1 lac2
 ren lactate lac1
 rename hbl lac2
@@ -678,18 +641,16 @@ label var lac1 "Lactate - ward"
 label var lac2 "Lactate - ICU"
 su lac1 lac2
 
-/* Platelets */
 ren lpc plat2
 ren platelets plat1
 label var plat1 "Platelets - ward"
 label var plat2 "Platelets - ICU"
 
-// Prepare your own severity scores etc
-include cr_severity.do
 
 *  ======================
 *  = Define populations =
 *  ======================
+
 global iif_lac if lac1 < 10 & lac2 < 10 & lac1 >=0 & lac2 >=0 & abs(lac_traj < 10)
 gen pop_lac = 0
 replace pop_lac = 1 $iif_lac
@@ -707,11 +668,8 @@ label var pop_ims_c "ICNARC partial trajectory population"
 *  = Prep variables by centering for models =
 *  ==========================================
 
-/* Centre adjustment variables */
 su ims2
 gen ims2_c = ims2 - r(mean)
 label var ims2_c "ICNARC physiology score (centred)"
 
 cap drop __*
-// CHANGED: 2013-05-20 - this is responsibility of calling code
-* save ../data/working_postflight.dta, replace
