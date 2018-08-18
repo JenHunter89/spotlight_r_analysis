@@ -1,4 +1,7 @@
 **** Done up to 270
+**** Load working_all.dta in stata
+**** When this runs without issues, need to convert resulting file to csv, load to R (remember latin encode = 1)
+**** Then need to merge my strobe file with resulting csv
 
 
 cap label drop truefalse
