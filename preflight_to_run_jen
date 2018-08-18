@@ -1,4 +1,4 @@
-**** Done up to 270
+**** Done up to 410
 **** Load working_all.dta in stata
 **** When this runs without issues, need to convert resulting file to csv, load to R (remember latin encode = 1)
 **** Then need to merge my strobe file with resulting csv
@@ -274,6 +274,7 @@ label var icnarc0 "ICNARC score (removing abnormal zeros)"
 *  =======================================
 *  = Defer and delay indicator variables =
 *  =======================================
+
 gen early4 = time2icu < 4
 label var early4 "Early admission to ICU"
 label define early 0 "Deferred" 1 "Early"
@@ -297,44 +298,24 @@ label values delay4 delay12 delay24 delay
 *  ========================
 *  = Time and period vars =
 *  ========================
+
 cap drop visit_tod
 gen visit_hour = hh(v_timestamp)
 label var visit_hour "Visitg (hour of day)"
 egen visit_tod = cut(visit_hour), at(0,4,8,12,16,20,24) icodes label
 label var visit_tod "Visit (time of day)"
-* tab visit_tod
 
 cap drop visit_dow
 gen visit_dow = dow(dofc(v_timestamp))
 label var visit_dow "Visit day of week"
-label define dow ///
-    0 "Sun" ///
-    1 "Mon" ///
-    2 "Tue" ///
-    3 "Wed" ///
-    4 "Thu" ///
-    5 "Fri" ///
-    6 "Sat"
+label define dow 0 "Sun" 1 "Mon" 2 "Tue" 3 "Wed" 4 "Thu" 5 "Fri" 6 "Sat"
 label values visit_dow dow
 tab visit_dow
 
-* NOTE: 2013-01-11 - not sure that can make much of this given incomplete annual data
 cap drop visit_month
 gen visit_month = month(dofC(v_timestamp))
 label var visit_month "Visit month of year"
-label define month ///
-    1   "Jan" ///
-    2   "Feb" ///
-    3   "Mar" ///
-    4   "Apr" ///
-    5   "May" ///
-    6   "Jun" ///
-    7   "Jul" ///
-    8   "Aug" ///
-    9   "Sep" ///
-    10  "Oct" ///
-    11  "Nov" ///
-    12  "Dec"
+label define month 1 "Jan" 2 "Feb" 3 "Mar" 4 "Apr" 5 "May" 6 "Jun" 7 "Jul" 8 "Aug" 9 "Sep" 10  "Oct" 11  "Nov" 12"Dec"
 label values visit_month month
 tab visit_month
 
@@ -361,50 +342,28 @@ label values out_of_hours out_of_hours
 *  = CCOT shifts =
 *  ===============
 
-* NOTE: 2012-10-05 - depends on working and sites so be careful about code order
-
-* CHANGED: 2013-01-15 - commented out as merge now happens at beginning
-* merge m:1 icode using ../data/sites.dta, ///
-*   keepusing(ccot ccot_days ccot_start ccot_hours ccot_shift_pattern)
-
-// CCOT senior - tidy
 replace ccot_senior = "" if ccot_senior == "0"
 replace ccot_senior = "8" if ccot_senior == "8b"
 
-* NOTE: 2012-10-05 - defaults to no ccot: seems sensible but a discussion point
 gen ccot_on = 0
 label var ccot_on "CCOT on-shift"
 label values ccot_on truefalse
 
 replace ccot_on = 1 if ccot_shift_pattern == 3
-* dow 0 = Sunday, 6 = Saturday
-replace ccot_on = 1 if ccot_days == 7 & hh(v_timestamp) >= ccot_start ///
-    & hh(v_timestamp) < ccot_start + ccot_hours
-replace ccot_on = 1 if ccot_days == 6 & hh(v_timestamp) >= ccot_start ///
-    & hh(v_timestamp) < ccot_start + ccot_hours ///
-    & dow(dofc(v_timestamp)) != 0
-replace ccot_on = 1 if ccot_days == 5 & hh(v_timestamp) >= ccot_start ///
-    & hh(v_timestamp) < ccot_start + ccot_hours ///
-    & inlist(dow(dofc(v_timestamp)), 1, 2, 3, 4, 5)
+replace ccot_on = 1 if ccot_days == 7 & hh(v_timestamp) >= ccot_start & hh(v_timestamp) < ccot_start + ccot_hours
+replace ccot_on = 1 if ccot_days == 6 & hh(v_timestamp) >= ccot_start & hh(v_timestamp) < ccot_start + ccot_hours & dow(dofc(v_timestamp)) != 0
+replace ccot_on = 1 if ccot_days == 5 & hh(v_timestamp) >= ccot_start hh(v_timestamp) < ccot_start + ccot_hours & inlist(dow(dofc(v_timestamp)), 1, 2, 3, 4, 5)
 
 tab ccot_shift_pattern ccot_on, row
-
-/*
-NOTE: 2013-01-14 - now work out if patient seen at beginning or end of CCOT provision
-- only relevant for sites <24/7 with CCOT
-*/
 
 label define ccot_shift_early 0 "Last 2 hours of shift" 1 "First 2 hours of shift"
 
 cap drop ccot_shift_early
 gen ccot_shift_early = .
 label var ccot_shift_early "Flag if visit at beginning or end of shift"
-replace ccot_shift_early = 1 if inlist(ccot_shift_pattern,2) ///
-    & (hh(v_timestamp) - ccot_start <= 2)
-replace ccot_shift_early = 1 if inlist(ccot_shift_pattern,1) ///
-    & (hh(v_timestamp) - ccot_start <= 2) & !inlist(visit_dow,0,6)
-replace ccot_shift_early = 0 if inlist(ccot_shift_pattern,1,2) ///
-    & ((ccot_start + ccot_hours) - hh(v_timestamp)  <= 2)
+replace ccot_shift_early = 1 if inlist(ccot_shift_pattern,2) & (hh(v_timestamp) - ccot_start <= 2)
+replace ccot_shift_early = 1 if inlist(ccot_shift_pattern,1) & (hh(v_timestamp) - ccot_start <= 2) & !inlist(visit_dow,0,6)
+replace ccot_shift_early = 0 if inlist(ccot_shift_pattern,1,2) & ((ccot_start + ccot_hours) - hh(v_timestamp)  <= 2)
 label values ccot_shift_early ccot_shift_early
 tab ccot_shift_early
 
@@ -416,7 +375,6 @@ su ccot_hrs_perweek, d
 
 cap drop ccot_shift_start
 gen ccot_shift_start = ccot_shift_early == 1
-* NOTE: 2013-01-30 - explored the monday morning effect but v few pts
 
 *  ========================
 *  = Broad patient groups =
@@ -442,11 +400,7 @@ replace v_decision = 1 if inlist(v_disposal,1,2)
 replace v_decision = 2 if inlist(v_disposal,3)
 replace v_decision = 3 if inlist(v_disposal,4)
 label var v_decision "Decision after bedside assessment"
-label define v_decision ///
-    0 "No review planned" ///
-    1 "Ward review planned" ///
-    2 "Accepted to Level 2 bed" ///
-    3 "Accepted to Level 3 bed"
+label define v_decision 0 "No review planned" 1 "Ward review planned" 2 "Accepted to Level 2 bed" 3 "Accepted to Level 3 bed"
 label values v_decision v_decision
 
 gen icu_accept = inlist(v_disposal,3,4)
