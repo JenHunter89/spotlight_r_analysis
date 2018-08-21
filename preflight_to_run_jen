@@ -1,8 +1,8 @@
-**** Done up to 410
+**** Gone through all code to edit to work in current version 
 **** Load working_all.dta in stata
 **** When this runs without issues, need to convert resulting file to csv, load to R (remember latin encode = 1)
 **** Then need to merge my strobe file with resulting csv
-**** Note have deleted include cr_severity.do from line 649, then continued after - check will this work
+**** Note have deleted include cr_severity.do from line 649, then continued after - check will this works
 
 
 cap label drop truefalse
