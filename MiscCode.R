@@ -17,3 +17,11 @@
 
 ##path <- file.path("raw_data","wrmc.csv")
 ##rawdata <- read.csv(path, stringsAsFactors = FALSE)
+
+describe(vardata$sepsis_severity)
+vardata$sepsis <- as.factor(vardata$sepsis)
+vardata$sepsis_severity <- as.factor(vardata$sepsis_severity)
+vardata$dx_pneum <- as.factor(vardata$dx_pneum)
+
+ggplot(data = vardata) + 
+  geom_boxplot(mapping = aes(x = vardata$dx_pneum, y = vardata$partABG_scoretraj))
