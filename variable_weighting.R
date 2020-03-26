@@ -41,6 +41,7 @@ vardata <- read_csv("Data/variables_data.csv")
 vardata$hr1[vardata$hr1 == 0] <- NA
 vardata$rr1[vardata$rr1 == 0] <- NA
 vardata$rr1[vardata$rr1 >= 80] <- NA
+vardata$lac1[vardata$lac1 == 0.0] <- NA
 
 ## ======
 ## Create Variables
@@ -320,6 +321,7 @@ describe(vardata$part_score2)
 
 
 ## ======
+## NOT USING THIS
 ## Identify clipped scores and variables - note only clipping first variable, as this is what limits trajectory; NOTE this is due to effect on trajectory calculations NOT to get rid of outliers
 ## ======
 
@@ -343,6 +345,7 @@ vardata$clipgcs <- ifelse(!is.na(vardata$gcs1) & vardata$gcs1 < quantile(vardata
 
 
 ## ======
+## NOT USING THIS
 ## Scale score 1 and score 2 from 0 to 1
 ## ======
 
@@ -494,6 +497,15 @@ describe(vardata$wcc2norm)
 vardata$gcs1norm <- ifelse(vardata$gcs1 == 15, 0, (15 - vardata$gcs1)/(15 - 3))
 vardata$gcs2norm <- ifelse(vardata$gcs2 == 15, 0, (15 - vardata$gcs2)/(15 - 3))
 
+## lactate
+lac1max <- max(vardata$lac1, na.rm = TRUE)
+vardata$lac1norm <- ifelse(vardata$lac1 <= 2, 0, (vardata$lac1 - 2)/(lac1max- 2))
+
+lac2max <- max(vardata$lac2, na.rm = TRUE)
+vardata$lac2norm <- ifelse(vardata$lac2 <= 2, 0, (vardata$lac2 - 2)/(lac2max- 2))
+
+describe(vardata$lac1norm)
+describe(vardata$lac2norm)
 
 ## !!!!! Add in lactate
 
@@ -519,6 +531,11 @@ vardata$scalescorepart2 <- ifelse(vardata$none_missing2 != 1 & vardata$partial_A
 describe(vardata$scalescorepart2)
 
 describe(vardata$time2icu)
+
+## =====
+## Try new with SOFA score
+## Didn't do this
+## =====
 
 ## ======
 ## Save data

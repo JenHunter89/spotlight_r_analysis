@@ -33,7 +33,6 @@ trajdata <- read_csv("Data/varcalcs_data.csv")
 ## Trajectories of interest:
 ## 1. Trajectories for severity scores, full and 2x partial
 ## 2. Trajectories for absolute variable values, clipped and non-clipped
-## 3. Trajectories for 
 ## ++++++++
 
 ## ++++++++
@@ -68,17 +67,22 @@ trajdata[,paste(names,"trajabsolut",sep="")] <- trajdata[,paste(names,"2",sep=""
 trajdata[,paste(names,"trajwt",sep="")] <- trajdata[,paste(names,"2wt",sep="")] - trajdata[,paste(names,"1wt",sep="")] / trajdata$time2icu
 
 ## Summed severity scores
+## Calculated as score2 - score1, more positive score = worse, therefore positive trajectory = getting worse, negative trajectory = getting better
 trajdata$full_scoretraj <- ifelse(!is.na(trajdata$full_score1) & !is.na(trajdata$full_score2), ((trajdata$full_score2 - trajdata$full_score1)/trajdata$time2icu), NA)
 trajdata$partABG_scoretraj <- ifelse(!is.na(trajdata$partABG_score1) & !is.na(trajdata$partABG_score2), ((trajdata$partABG_score2 - trajdata$partABG_score1)/trajdata$time2icu), NA)
 trajdata$part_scoretraj <- ifelse(!is.na(trajdata$part_score1) & !is.na(trajdata$part_score2), ((trajdata$part_score2 - trajdata$part_score1)/trajdata$time2icu), NA)
 
+trajdata$full_scoretraj
+
 ## ======
-## Trajectories for scaled variables and summed scales
+## Trajectories for scaled variables and summed scales -> not using these
 ## ======
 
+nameslac <- c(names, 'lac')
+
 ## Individual variable scaled trajectory
-trajdata[,paste(names,"trajnorm",sep="")] <- trajdata[,paste(names,"2norm",sep="")] - trajdata[,paste(names,"1norm",sep="")] / (trajdata$time2icu/24)
-describe(trajdata$rrtrajnorm)
+trajdata[,paste(nameslac,"trajnorm",sep="")] <- trajdata[,paste(names,"2norm",sep="")] - trajdata[,paste(names,"1norm",sep="")] / (trajdata$time2icu/24)
+describe(trajdata$lactrajnorm)
 
 ## summed scales trajectories
 trajdata$scale_fulltraj <- ifelse(!is.na(trajdata$scalescorefull1) & !is.na(trajdata$scalescorefull2), ((trajdata$scalescorefull2 - trajdata$scalescorefull1)/(trajdata$time2icu/24)), NA)
